@@ -1,26 +1,71 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+/*
+  nudgeo brand tokens (light theme, locked: cream + ink + sun yellow)
+  Radius system: buttons = full pill, cards = 24px (rounded-3xl), inputs = 14px
+*/
+@theme {
+  --color-cream: #faf6ed;
+  --color-cream-deep: #f2ecdd;
+  --color-ink: #201d15;
+  --color-ink-soft: #5d5847;
+  --color-line: #e5ddc9;
+  --color-sun: #ffd43b;
+  --color-sun-soft: #fff3c9;
+  --color-sun-deep: #f0b90b;
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --font-sans: var(--font-outfit), ui-sans-serif, system-ui, sans-serif;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  /* shadcn semantic tokens, mapped to the nudgeo palette */
+  --color-background: #faf6ed;
+  --color-foreground: #201d15;
+  --color-primary: #ffd43b;
+  --color-primary-foreground: #201d15;
+  --color-secondary: #f2ecdd;
+  --color-secondary-foreground: #201d15;
+  --color-muted: #f2ecdd;
+  --color-muted-foreground: #5d5847;
+  --color-accent: #fff3c9;
+  --color-accent-foreground: #201d15;
+  --color-destructive: #b3261e;
+  --color-destructive-foreground: #fffdf8;
+  --color-border: #e5ddc9;
+  --color-input: #e5ddc9;
+  --color-ring: #f0b90b;
+
+  --animate-marquee: marquee 36s linear infinite;
+
+  @keyframes marquee {
+    from {
+      transform: translateX(0);
+    }
+    to {
+      transform: translateX(-50%);
+    }
   }
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-cream);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--color-sun);
+  color: var(--color-ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  .animate-marquee {
+    animation: none;
+  }
 }
