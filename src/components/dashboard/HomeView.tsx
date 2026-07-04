@@ -1,31 +1,30 @@
 'use client'
 import Link from 'next/link'
 import { ArrowRight, CalendarPlus, Plus } from '@phosphor-icons/react'
+import type { HomeEventRow, RecentSignup } from '@/lib/stats'
+import { publicEventHost } from '@/lib/urls'
 import { StatCard } from './StatCard'
 
-export type HomeEvent = {
-  id: string
-  name: string
-  slug: string
-  category: string | null
-  status: string
-  signups: number
+type Summary = {
+  events: HomeEventRow[]
+  totalSignups: number
+  weekSignups: number
+  referred: number
+  liveEvents: number
+  hype: number
+  recent: RecentSignup[]
 }
 
-// Sample metrics until signups and email sending go live
-const STATS = [
-  { label: 'Total signups', value: '3,490', hint: '+312 this week (sample)' },
-  { label: 'Hype Score (live event)', value: '87', hint: '+9 this week (sample)' },
-  { label: 'Visit-to-signup', value: '6.1%', hint: 'across all events (sample)' },
-  { label: 'Email sends', value: '9,150', hint: 'this month (sample)' },
-]
-
-const RECENT_SIGNUPS = [
-  { name: 'Anaïs Fontaine', event: 'Fieldnotes, Vol. 2', when: '4 minutes ago' },
-  { name: 'Kofi Mensah', event: 'Fieldnotes, Vol. 2', when: '28 minutes ago' },
-  { name: 'Ren Takahashi', event: 'Fieldnotes, Vol. 2', when: '1 hour ago' },
-  { name: 'Lucía Herrera', event: 'Fieldnotes, Vol. 2', when: '3 hours ago' },
-]
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime()
+  const mins = Math.round(diff / 60_000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins} min ago`
+  const hours = Math.round(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.round(hours / 24)
+  return `${days}d ago`
+}
 
 function StatusPill({ status }: { status: string }) {
   const label = status.charAt(0).toUpperCase() + status.slice(1)
@@ -38,16 +37,34 @@ function StatusPill({ status }: { status: string }) {
   return <span className={`rounded-full px-3 py-1 text-xs font-bold ${styles}`}>{label}</span>
 }
 
-export function HomeView({ firstName, events }: { firstName: string; events: HomeEvent[] }) {
+export function HomeView({ firstName, summary }: { firstName: string; summary: Summary }) {
+  const referralShare =
+    summary.totalSignups > 0
+      ? `${Math.round((summary.referred / summary.totalSignups) * 100)}%`
+      : '0%'
+
+  const stats = [
+    {
+      label: 'Total signups',
+      value: summary.totalSignups.toLocaleString(),
+      hint: `+${summary.weekSignups.toLocaleString()} this week`,
+    },
+    { label: 'Hype Score', value: String(summary.hype), hint: 'across your events' },
+    { label: 'Referred signups', value: referralShare, hint: `${summary.referred} via friends` },
+    {
+      label: 'Live events',
+      value: String(summary.liveEvents),
+      hint: `${summary.events.length} total`,
+    },
+  ]
+
   return (
     <div className="mx-auto max-w-6xl">
-      <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">
-        Hey {firstName}.
-      </h1>
+      <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">Hey {firstName}.</h1>
       <p className="mt-2 text-ink-soft">Here's how your launches are doing today.</p>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        {STATS.map((s) => (
+        {stats.map((s) => (
           <StatCard key={s.label} {...s} />
         ))}
       </div>
@@ -65,7 +82,7 @@ export function HomeView({ firstName, events }: { firstName: string; events: Hom
             </Link>
           </div>
 
-          {events.length === 0 ? (
+          {summary.events.length === 0 ? (
             <div className="mt-4 grid place-items-center rounded-3xl border border-dashed border-line bg-white px-6 py-16 text-center">
               <span className="grid size-14 place-items-center rounded-2xl bg-sun-soft text-sun-deep">
                 <CalendarPlus size={28} weight="bold" />
@@ -83,7 +100,7 @@ export function HomeView({ firstName, events }: { firstName: string; events: Hom
             </div>
           ) : (
             <div className="mt-4 overflow-hidden rounded-3xl border border-line bg-white">
-              {events.map((event, i) => (
+              {summary.events.map((event, i) => (
                 <Link
                   key={event.id}
                   href="/dashboard/analytics"
@@ -94,7 +111,8 @@ export function HomeView({ firstName, events }: { firstName: string; events: Hom
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-bold">{event.name}</p>
                     <p className="mt-0.5 truncate text-sm text-ink-soft">
-                      {event.category ? `${event.category} · ` : ''}nudgeo.app/{event.slug}
+                      {event.category ? `${event.category} · ` : ''}
+                      {publicEventHost(event.slug)}
                     </p>
                   </div>
                   <div className="text-right">
@@ -112,24 +130,27 @@ export function HomeView({ firstName, events }: { firstName: string; events: Hom
         <section>
           <h2 className="text-xl font-bold tracking-tight">Recent signups</h2>
           <div className="mt-4 rounded-3xl border border-line bg-white p-6">
-            {RECENT_SIGNUPS.map((s, i) => (
-              <div
-                key={s.name}
-                className={`flex items-center gap-3 py-3 ${i > 0 ? 'border-t border-line' : 'pt-0'}`}
-              >
-                <span className="grid size-9 shrink-0 place-items-center rounded-full bg-sun-soft text-sm font-bold text-ink">
-                  {s.name.charAt(0)}
-                </span>
-                <div className="min-w-0 flex-1 leading-tight">
-                  <p className="truncate text-sm font-semibold">{s.name}</p>
-                  <p className="truncate text-xs text-ink-soft">{s.event}</p>
+            {summary.recent.length === 0 ? (
+              <p className="py-6 text-center text-sm text-ink-soft">
+                No signups yet. Share an event link to get the first one.
+              </p>
+            ) : (
+              summary.recent.map((s, i) => (
+                <div
+                  key={`${s.name}-${i}`}
+                  className={`flex items-center gap-3 py-3 ${i > 0 ? 'border-t border-line' : 'pt-0'}`}
+                >
+                  <span className="grid size-9 shrink-0 place-items-center rounded-full bg-sun-soft text-sm font-bold text-ink">
+                    {s.name.charAt(0).toUpperCase()}
+                  </span>
+                  <div className="min-w-0 flex-1 leading-tight">
+                    <p className="truncate text-sm font-semibold">{s.name}</p>
+                    <p className="truncate text-xs text-ink-soft">{s.event}</p>
+                  </div>
+                  <span className="shrink-0 text-xs text-ink-soft">{relativeTime(s.at)}</span>
                 </div>
-                <span className="shrink-0 text-xs text-ink-soft">{s.when}</span>
-              </div>
-            ))}
-            <p className="mt-3 text-center text-xs text-ink-soft">
-              Sample feed until subscriber signups go live.
-            </p>
+              ))
+            )}
           </div>
         </section>
       </div>

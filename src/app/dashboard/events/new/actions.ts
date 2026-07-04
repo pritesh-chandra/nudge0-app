@@ -2,6 +2,7 @@
 import { randomUUID } from 'node:crypto'
 import { headers } from 'next/headers'
 import { auth } from '@/lib/auth'
+import { getUserPlan } from '@/lib/billing'
 import { db } from '@/lib/db'
 
 // ---------- Create event ----------
@@ -30,6 +31,41 @@ export type CreateEventResult = { ok: true; slug: string } | { ok: false; messag
 
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
+// Slugs that would collide with app routes and must not become event pages
+const RESERVED_SLUGS = new Set([
+  'about',
+  'privacy',
+  'terms',
+  'legal',
+  'pricing',
+  'blog',
+  'help',
+  'support',
+  'contact',
+  'dashboard',
+  'auth',
+  'api',
+  'admin',
+  'settings',
+  'login',
+  'logout',
+  'signin',
+  'signup',
+  'sign-in',
+  'sign-up',
+  'verify',
+  'app',
+  'u',
+  'unsubscribe',
+  'unsubscribed',
+  'static',
+  'assets',
+  'public',
+  'favicon',
+  'robots',
+  'sitemap',
+])
+
 function isHttpUrl(value: string) {
   try {
     const u = new URL(value)
@@ -48,6 +84,27 @@ export async function createEvent(input: CreateEventInput): Promise<CreateEventR
   if (!name) return { ok: false, message: 'Give your event a name.' }
   if (!SLUG_RE.test(slug)) {
     return { ok: false, message: 'Page link can only use letters, numbers, and dashes.' }
+  }
+  if (RESERVED_SLUGS.has(slug)) {
+    return { ok: false, message: `nudgeo.app/${slug} is reserved. Pick another link.` }
+  }
+
+  // Enforce the plan's event quota
+  const plan = await getUserPlan(session.user.id)
+  if (plan.events_limit !== null) {
+    const countRow = await db
+      .selectFrom('events')
+      .select((eb) => eb.fn.countAll<string>().as('c'))
+      .where('user_id', '=', session.user.id)
+      .executeTakeFirst()
+    if (Number(countRow?.c ?? 0) >= plan.events_limit) {
+      return {
+        ok: false,
+        message: `Your ${plan.name} plan allows ${plan.events_limit} event${
+          plan.events_limit === 1 ? '' : 's'
+        }. Upgrade to create more.`,
+      }
+    }
   }
 
   const productLinks = input.productLinks

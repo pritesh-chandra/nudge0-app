@@ -4,10 +4,21 @@ import { emailOTP } from 'better-auth/plugins'
 import { pool } from './pool'
 import { sendMail } from './mailer'
 
+// baseURL and trusted origins must match the deployed domain in production, or
+// Better Auth rejects requests / sets cookies for the wrong host (a common
+// source of production auth failures). Drive them from env.
+const baseURL = process.env.BETTER_AUTH_URL ?? 'http://localhost:8080'
+
+// Auth only ever happens on the apex (dashboard + auth pages), never on the
+// public event subdomains, so this list stays short.
+const trustedOrigins = process.env.TRUSTED_ORIGINS
+  ? process.env.TRUSTED_ORIGINS.split(',').map((s) => s.trim()).filter(Boolean)
+  : [baseURL]
+
 export const auth = betterAuth({
   // Supabase Postgres, via the shared connection pool
   database: pool,
-  baseURL: process.env.BETTER_AUTH_URL ?? 'http://localhost:8080',
+  baseURL,
   secret: process.env.BETTER_AUTH_SECRET,
   emailAndPassword: {
     enabled: true,
@@ -46,7 +57,7 @@ export const auth = betterAuth({
       maxAge: 60 * 5,
     },
   },
-  trustedOrigins: ['http://localhost:8080'],
+  trustedOrigins,
 })
 
 export type Session = typeof auth.$Infer.Session

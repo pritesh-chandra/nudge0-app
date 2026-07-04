@@ -1,15 +1,12 @@
 'use client'
 import { useRef, useState } from 'react'
-import { PaperPlaneRight } from '@phosphor-icons/react'
+import Link from 'next/link'
+import { CalendarPlus, Crown, PaperPlaneRight } from '@phosphor-icons/react'
+import { saveTemplate } from '@/app/dashboard/emails/actions'
+import { publicEventHost } from '@/lib/urls'
 
-// Sample events until the events backend lands
-const EVENTS = [
-  { key: 'fieldnotes', name: 'Fieldnotes, Vol. 2', slug: 'fieldnotes', status: 'Live' },
-  { key: 'printswap', name: 'Print Swap Night', slug: 'print-swap', status: 'Ended' },
-  { key: 'darkroom', name: 'Darkroom Workshop Tour', slug: 'darkroom-tour', status: 'Draft' },
-] as const
-
-type EventKey = (typeof EVENTS)[number]['key']
+type EventLite = { id: string; name: string; slug: string; status: string }
+type SavedTemplate = { event_id: string; template_key: string; subject: string; body: string }
 
 const TEMPLATES = [
   {
@@ -66,35 +63,114 @@ You signed up early, so you get first pick.
   },
 ] as const
 
-type TemplateKey = (typeof TEMPLATES)[number]['key']
-
 const VARIABLES = ['{{first_name}}', '{{event_name}}', '{{creator_name}}', '{{page_link}}']
 
 type Draft = { subject: string; body: string }
 
-function render(text: string, event: (typeof EVENTS)[number], creatorName: string) {
+function render(text: string, event: EventLite, creatorName: string) {
   return text
     .replaceAll('{{first_name}}', 'Anaïs')
     .replaceAll('{{event_name}}', event.name)
     .replaceAll('{{creator_name}}', creatorName)
-    .replaceAll('{{page_link}}', `nudgeo.app/${event.slug}`)
+    .replaceAll('{{page_link}}', publicEventHost(event.slug))
 }
 
-export function EmailTemplatesView({ creatorName }: { creatorName: string }) {
-  const [eventKey, setEventKey] = useState<EventKey>('fieldnotes')
-  const [templateKey, setTemplateKey] = useState<TemplateKey>('welcome')
-  // Drafts are stored per event + template, so each event keeps its own copy
-  const [drafts, setDrafts] = useState<Record<string, Draft>>({})
-  const [savedKey, setSavedKey] = useState<string | null>(null)
+function LockedState() {
+  return (
+    <div className="mx-auto max-w-2xl">
+      <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">Email templates</h1>
+      <p className="mt-2 text-ink-soft">Customize what subscribers receive, per event.</p>
+      <div className="mt-8 grid place-items-center rounded-3xl border border-line bg-white px-6 py-16 text-center">
+        <span className="grid size-14 place-items-center rounded-2xl bg-sun text-ink">
+          <Crown size={28} weight="fill" />
+        </span>
+        <h2 className="mt-5 text-xl font-bold tracking-tight">A Pro feature</h2>
+        <p className="mt-2 max-w-[44ch] leading-relaxed text-ink-soft">
+          Custom email templates are available on Creator and Studio. Upgrade to write your
+          own signup, update, launch, and last-call emails per event.
+        </p>
+        <Link
+          href="/#pricing"
+          className="mt-6 flex items-center gap-1.5 rounded-full bg-sun px-6 py-3 text-sm font-semibold text-ink transition-transform hover:-translate-y-px active:scale-[0.98]"
+        >
+          <Crown size={14} weight="fill" />
+          See plans
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+function EmptyState() {
+  return (
+    <div className="mx-auto max-w-2xl">
+      <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">Email templates</h1>
+      <p className="mt-2 text-ink-soft">Customize what subscribers receive, per event.</p>
+      <div className="mt-8 grid place-items-center rounded-3xl border border-dashed border-line bg-white px-6 py-16 text-center">
+        <span className="grid size-14 place-items-center rounded-2xl bg-sun-soft text-sun-deep">
+          <CalendarPlus size={28} weight="bold" />
+        </span>
+        <h2 className="mt-5 text-xl font-bold tracking-tight">No events yet</h2>
+        <p className="mt-2 max-w-[40ch] leading-relaxed text-ink-soft">
+          Create an event first, then tailor the emails its subscribers receive.
+        </p>
+        <Link
+          href="/dashboard/events/new"
+          className="mt-6 rounded-full bg-sun px-6 py-3 text-sm font-semibold text-ink transition-transform hover:-translate-y-px active:scale-[0.98]"
+        >
+          Create an event
+        </Link>
+      </div>
+    </div>
+  )
+}
+
+export function EmailTemplatesView({
+  creatorName,
+  isPro,
+  events,
+  saved,
+}: {
+  creatorName: string
+  isPro: boolean
+  events: EventLite[]
+  saved: SavedTemplate[]
+}) {
+  if (!isPro) return <LockedState />
+  if (events.length === 0) return <EmptyState />
+  return <Editor creatorName={creatorName} events={events} saved={saved} />
+}
+
+function Editor({
+  creatorName,
+  events,
+  saved,
+}: {
+  creatorName: string
+  events: EventLite[]
+  saved: SavedTemplate[]
+}) {
+  // Persisted drafts keyed by "eventId:templateKey"; seed from DB
+  const seeded: Record<string, Draft> = {}
+  for (const t of saved) {
+    seeded[`${t.event_id}:${t.template_key}`] = { subject: t.subject, body: t.body }
+  }
+
+  const [eventId, setEventId] = useState(events[0].id)
+  const [templateKey, setTemplateKey] = useState<string>(TEMPLATES[0].key)
+  const [drafts, setDrafts] = useState<Record<string, Draft>>(seeded)
+  const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set(Object.keys(seeded)))
+  const [status, setStatus] = useState<{ key: string; ok: boolean; message: string } | null>(null)
+  const [saving, setSaving] = useState(false)
   const bodyRef = useRef<HTMLTextAreaElement>(null)
 
-  const event = EVENTS.find((e) => e.key === eventKey)!
+  const event = events.find((e) => e.id === eventId)!
   const template = TEMPLATES.find((t) => t.key === templateKey)!
-  const draftKey = `${eventKey}:${templateKey}`
+  const draftKey = `${eventId}:${templateKey}`
   const draft = drafts[draftKey] ?? { subject: template.subject, body: template.body }
 
   function update(patch: Partial<Draft>) {
-    setSavedKey(null)
+    setStatus(null)
     setDrafts((d) => ({ ...d, [draftKey]: { ...draft, ...patch } }))
   }
 
@@ -110,16 +186,30 @@ export function EmailTemplatesView({ creatorName }: { creatorName: string }) {
     })
   }
 
+  async function onSave() {
+    setSaving(true)
+    setStatus(null)
+    const result = await saveTemplate({
+      eventId,
+      templateKey,
+      subject: draft.subject,
+      body: draft.body,
+    })
+    setSaving(false)
+    if (!result.ok) {
+      setStatus({ key: draftKey, ok: false, message: result.message })
+      return
+    }
+    setSavedKeys((s) => new Set(s).add(draftKey))
+    setStatus({ key: draftKey, ok: true, message: `Saved for ${event.name}.` })
+  }
+
   return (
     <div className="mx-auto max-w-6xl">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">
-            Email templates
-          </h1>
-          <p className="mt-2 text-ink-soft">
-            What subscribers receive, customized per event.
-          </p>
+          <h1 className="text-3xl font-extrabold tracking-tight md:text-4xl">Email templates</h1>
+          <p className="mt-2 text-ink-soft">What subscribers receive, customized per event.</p>
         </div>
         <div>
           <label htmlFor="template-event-select" className="sr-only">
@@ -127,12 +217,12 @@ export function EmailTemplatesView({ creatorName }: { creatorName: string }) {
           </label>
           <select
             id="template-event-select"
-            value={eventKey}
-            onChange={(e) => setEventKey(e.target.value as EventKey)}
+            value={eventId}
+            onChange={(e) => setEventId(e.target.value)}
             className="rounded-full border border-line bg-white px-5 py-2.5 text-sm font-semibold text-ink focus:outline-2 focus:outline-sun-deep"
           >
-            {EVENTS.map((e) => (
-              <option key={e.key} value={e.key}>
+            {events.map((e) => (
+              <option key={e.id} value={e.id}>
                 {e.name} ({e.status})
               </option>
             ))}
@@ -146,7 +236,7 @@ export function EmailTemplatesView({ creatorName }: { creatorName: string }) {
           <div className="grid gap-2">
             {TEMPLATES.map((t) => {
               const active = t.key === templateKey
-              const customized = Boolean(drafts[`${eventKey}:${t.key}`])
+              const customized = savedKeys.has(`${eventId}:${t.key}`)
               return (
                 <button
                   key={t.key}
@@ -162,7 +252,7 @@ export function EmailTemplatesView({ creatorName }: { creatorName: string }) {
                   {t.name}
                   {customized && (
                     <span className={`mt-0.5 block text-xs font-medium ${active ? 'text-sun' : 'text-sun-deep'}`}>
-                      Edited for this event
+                      Saved for this event
                     </span>
                   )}
                 </button>
@@ -221,20 +311,24 @@ export function EmailTemplatesView({ creatorName }: { creatorName: string }) {
             <div className="flex items-center gap-4">
               <button
                 type="button"
-                onClick={() => setSavedKey(draftKey)}
-                className="rounded-full bg-sun px-6 py-2.5 text-sm font-semibold text-ink transition-transform hover:-translate-y-px active:scale-[0.98]"
+                onClick={onSave}
+                disabled={saving}
+                className="rounded-full bg-sun px-6 py-2.5 text-sm font-semibold text-ink transition-transform hover:-translate-y-px active:scale-[0.98] disabled:opacity-60"
               >
-                Save template
+                {saving ? 'Saving…' : 'Save template'}
               </button>
-              {savedKey === draftKey && (
-                <p role="status" className="text-sm font-medium text-[#4A7C59]">
-                  Saved for {event.name}.
+              {status && status.key === draftKey && (
+                <p
+                  role="status"
+                  className={`text-sm font-medium ${status.ok ? 'text-[#4A7C59]' : 'text-[#B3261E]'}`}
+                >
+                  {status.message}
                 </p>
               )}
             </div>
             <p className="text-xs text-ink-soft">
-              Templates are kept per event. Persistence and sending ship with the events
-              backend.
+              Saved to your account, per event. Sending runs off these when you post an
+              update.
             </p>
           </div>
         </section>

@@ -26,6 +26,7 @@ import {
   type Socials,
 } from '@/app/dashboard/events/new/actions'
 import { EventFullPreview } from './EventFullPreview'
+import { publicEventHost, publicEventUrl } from '@/lib/urls'
 
 const CATEGORIES = [
   'Product drop',
@@ -174,9 +175,11 @@ const inputClass =
 export function CreateEventView({
   creatorName,
   plan,
+  limit,
 }: {
   creatorName: string
   plan: 'free' | 'creator' | 'studio'
+  limit: { atLimit: boolean; planName: string; eventsLimit: number | null }
 }) {
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
@@ -287,25 +290,70 @@ export function CreateEventView({
     setPublished(true)
   }
 
+  if (limit.atLimit) {
+    return (
+      <div className="mx-auto grid max-w-2xl place-items-center py-20 text-center">
+        <span className="grid size-14 place-items-center rounded-2xl bg-sun text-ink">
+          <Crown size={28} weight="fill" />
+        </span>
+        <h1 className="mt-5 text-3xl font-extrabold tracking-tight">
+          You've used your {limit.planName} events.
+        </h1>
+        <p className="mt-3 max-w-[46ch] leading-relaxed text-ink-soft">
+          The {limit.planName} plan includes{' '}
+          {limit.eventsLimit === 1 ? '1 event' : `${limit.eventsLimit} events`}. Upgrade to
+          run more launches at once, or archive an existing event to free up a slot.
+        </p>
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <a
+            href="/#pricing"
+            className="flex items-center gap-1.5 rounded-full bg-sun px-6 py-3 text-sm font-semibold text-ink transition-transform hover:-translate-y-px active:scale-[0.98]"
+          >
+            <Crown size={14} weight="fill" />
+            See plans
+          </a>
+          <Link
+            href="/dashboard"
+            className="rounded-full border border-ink/20 px-6 py-3 text-sm font-semibold text-ink transition-colors hover:border-ink/50"
+          >
+            Back to home
+          </Link>
+        </div>
+      </div>
+    )
+  }
+
   if (published) {
     return (
       <div className="mx-auto grid max-w-2xl place-items-center py-20 text-center">
         <CheckCircle size={56} weight="fill" className="text-sun-deep" />
         <h1 className="mt-5 text-3xl font-extrabold tracking-tight">Your page is ready.</h1>
         <p className="mt-3 max-w-[44ch] leading-relaxed text-ink-soft">
-          <span className="font-semibold text-ink">{name || 'Your event'}</span> is saved and
-          lives at{' '}
-          <span className="rounded-full bg-cream-deep px-3 py-1 font-semibold text-ink">
-            nudgeo.app/{effectiveSlug || 'your-event'}
-          </span>
+          <span className="font-semibold text-ink">{name || 'Your event'}</span> is live at{' '}
+          <a
+            href={publicEventUrl(effectiveSlug || 'your-event')}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-full bg-cream-deep px-3 py-1 font-semibold text-ink underline underline-offset-2"
+          >
+            {publicEventHost(effectiveSlug || 'your-event')}
+          </a>
         </p>
         <p className="mt-4 max-w-[48ch] text-sm leading-relaxed text-ink-soft">
-          The public page itself goes live when subscriber signups ship.
+          Share the link and signups will start landing on your dashboard.
         </p>
-        <div className="mt-8 flex gap-3">
+        <div className="mt-8 flex flex-wrap justify-center gap-3">
+          <a
+            href={publicEventUrl(effectiveSlug || 'your-event')}
+            target="_blank"
+            rel="noreferrer"
+            className="rounded-full bg-sun px-6 py-3 text-sm font-semibold text-ink transition-transform hover:-translate-y-px active:scale-[0.98]"
+          >
+            View live page
+          </a>
           <Link
             href="/dashboard"
-            className="rounded-full bg-sun px-6 py-3 text-sm font-semibold text-ink transition-transform hover:-translate-y-px active:scale-[0.98]"
+            className="rounded-full border border-ink/20 px-6 py-3 text-sm font-semibold text-ink transition-colors hover:border-ink/50"
           >
             Back to home
           </Link>

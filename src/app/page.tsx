@@ -7,6 +7,7 @@ import { UseCaseMarquee } from '@/components/UseCaseMarquee'
 import { HowItWorks } from '@/components/HowItWorks'
 import { FeatureBento } from '@/components/FeatureBento'
 import { HypeScore } from '@/components/HypeScore'
+import { Comparison } from '@/components/Comparison'
 import { Pricing } from '@/components/Pricing'
 import { Testimonials } from '@/components/Testimonials'
 import { Faq } from '@/components/Faq'
@@ -27,6 +28,7 @@ export default async function LandingPage() {
         <HowItWorks />
         <FeatureBento />
         <HypeScore />
+        <Comparison />
         <Pricing />
         <Testimonials />
         <Faq />
