@@ -1,8 +1,8 @@
 'use client'
 import { useState } from 'react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
-import { signIn } from '@/lib/auth-client'
+import { useRouter, useSearchParams } from 'next/navigation'
+import { authClient, signIn } from '@/lib/auth-client'
 import { AuthLayout, Field, SubmitButton } from './AuthLayout'
 
 const QUOTE = {
@@ -14,20 +14,28 @@ const QUOTE = {
 
 export function SignInForm() {
   const router = useRouter()
+  const justVerified = useSearchParams().get('verified') === '1'
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const form = new FormData(e.currentTarget)
+    const email = String(form.get('email'))
     setError(null)
     setLoading(true)
     const { error } = await signIn.email({
-      email: String(form.get('email')),
+      email,
       password: String(form.get('password')),
     })
     setLoading(false)
     if (error) {
+      // Unverified accounts get bounced to OTP verification with a fresh code
+      if (error.status === 403) {
+        await authClient.emailOtp.sendVerificationOtp({ email, type: 'email-verification' })
+        router.push(`/auth/verify?email=${encodeURIComponent(email)}`)
+        return
+      }
       setError(error.message ?? 'Something went wrong. Please try again.')
       return
     }
@@ -36,6 +44,11 @@ export function SignInForm() {
 
   return (
     <AuthLayout title="Welcome back" subtitle="Sign in to your account" quote={QUOTE}>
+      {justVerified && (
+        <p role="status" className="mb-5 rounded-xl bg-sun/15 px-4 py-3 text-sm font-medium text-sun">
+          Email verified. Sign in to get started.
+        </p>
+      )}
       <form className="grid gap-5" onSubmit={onSubmit}>
         <Field
           id="email"

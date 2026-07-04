@@ -42,22 +42,22 @@ export function Footer() {
             </p>
             <ul className="mt-4 space-y-3 text-cream/70">
               <li>
-                <a href="#how" className="transition-colors hover:text-sun">
+                <a href="/#how" className="transition-colors hover:text-sun">
                   How it works
                 </a>
               </li>
               <li>
-                <a href="#features" className="transition-colors hover:text-sun">
+                <a href="/#features" className="transition-colors hover:text-sun">
                   Features
                 </a>
               </li>
               <li>
-                <a href="#pricing" className="transition-colors hover:text-sun">
+                <a href="/#pricing" className="transition-colors hover:text-sun">
                   Pricing
                 </a>
               </li>
               <li>
-                <a href="#faq" className="transition-colors hover:text-sun">
+                <a href="/#faq" className="transition-colors hover:text-sun">
                   FAQ
                 </a>
               </li>
@@ -70,13 +70,13 @@ export function Footer() {
             </p>
             <ul className="mt-4 space-y-3 text-cream/70">
               <li>
-                <a href="#" className="transition-colors hover:text-sun">
+                <a href="/about" className="transition-colors hover:text-sun">
                   About
                 </a>
               </li>
               <li>
-                <a href="#" className="transition-colors hover:text-sun">
-                  Blog
+                <a href="/legal" className="transition-colors hover:text-sun">
+                  Legal
                 </a>
               </li>
               <li>
@@ -103,11 +103,14 @@ export function Footer() {
           <div className="flex flex-wrap items-center justify-between gap-3 px-8 py-6 text-sm text-cream/50 sm:px-12">
             <p>© 2026 nudgeo</p>
             <div className="flex gap-6">
-              <a href="#" className="transition-colors hover:text-cream">
+              <a href="/privacy" className="transition-colors hover:text-cream">
                 Privacy
               </a>
-              <a href="#" className="transition-colors hover:text-cream">
+              <a href="/terms" className="transition-colors hover:text-cream">
                 Terms
+              </a>
+              <a href="/legal" className="transition-colors hover:text-cream">
+                Refunds
               </a>
             </div>
           </div>

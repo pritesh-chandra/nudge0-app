@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --port 4650",
+    "dev": "next dev --port 8080",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
@@ -13,10 +13,10 @@
     "@phosphor-icons/react": "^2.1.10",
     "@radix-ui/react-slot": "^1.3.0",
     "better-auth": "^1.6.23",
-    "better-sqlite3": "^12.11.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "dotenv": "^17.4.2",
+    "kysely": "^0.29.2",
     "motion": "^12.42.2",
     "next": "16.2.10",
     "pg": "^8.22.0",
@@ -26,7 +26,6 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@types/better-sqlite3": "^7.6.13",
     "@types/node": "^20",
     "@types/pg": "^8.20.0",
     "@types/react": "^19",

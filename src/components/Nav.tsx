@@ -13,16 +13,16 @@ export function Nav() {
         </a>
 
         <div className="hidden items-center gap-8 text-[15px] font-medium text-ink-soft md:flex">
-          <a href="#how" className="transition-colors hover:text-ink">
+          <a href="/#how" className="transition-colors hover:text-ink">
             How it works
           </a>
-          <a href="#features" className="transition-colors hover:text-ink">
+          <a href="/#features" className="transition-colors hover:text-ink">
             Features
           </a>
-          <a href="#pricing" className="transition-colors hover:text-ink">
+          <a href="/#pricing" className="transition-colors hover:text-ink">
             Pricing
           </a>
-          <a href="#faq" className="transition-colors hover:text-ink">
+          <a href="/#faq" className="transition-colors hover:text-ink">
             FAQ
           </a>
         </div>

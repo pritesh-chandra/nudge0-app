@@ -1,8 +1,8 @@
 import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
-  // Native/node-API packages used by the auth layer must stay unbundled
-  serverExternalPackages: ['better-sqlite3', 'pg'],
+  // Node-API packages used by the data layer must stay unbundled
+  serverExternalPackages: ['pg'],
 }
 
 export default nextConfig

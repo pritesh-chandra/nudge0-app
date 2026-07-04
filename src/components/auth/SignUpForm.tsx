@@ -20,11 +20,12 @@ export function SignUpForm() {
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
     const form = new FormData(e.currentTarget)
+    const email = String(form.get('email'))
     setError(null)
     setLoading(true)
     const { error } = await signUp.email({
       name: String(form.get('name')),
-      email: String(form.get('email')),
+      email,
       password: String(form.get('password')),
     })
     setLoading(false)
@@ -32,7 +33,8 @@ export function SignUpForm() {
       setError(error.message ?? 'Something went wrong. Please try again.')
       return
     }
-    router.push('/dashboard')
+    // Signup emails a 6-digit OTP; the account works once it's confirmed
+    router.push(`/auth/verify?email=${encodeURIComponent(email)}`)
   }
 
   return (
